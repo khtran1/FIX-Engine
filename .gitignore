@@ -30,3 +30,10 @@
 *.exe
 *.out
 *.app
+fix-engine
+
+# Logs
+logs/
+
+# Sensitive Data
+config/fix.cfg
