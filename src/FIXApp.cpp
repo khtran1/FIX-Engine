@@ -52,3 +52,35 @@ void FIXApp::fromApp(const FIX::Message& message, const FIX::SessionID& sessionI
   
   crack(message, sessionID);
 }
+
+
+void FIXApp::sendMarketDataRequest44(std::string symbol, bool isTypeX, const FIX::SessionID& sessionID) {
+  FIX44::MarketDataRequest message(
+    // fields 262, 263, 264 respectively
+    FIX::MDReqID(symbol + "-" + std::to_string(std::chrono::system_clock::now().time_since_epoch().count())), 
+    FIX::SubscriptionRequestType('1'),
+    FIX::MarketDepth(1)
+  );
+
+  // if isTypeX = false, then request 35=W. Else, request 35=X
+  message.set(FIX::MDUpdateType(isTypeX));
+
+  // Bid part of tag 269
+  FIX44::MarketDataRequest::NoMDEntryTypes groupBid;
+  groupBid.set(FIX::MDEntryType(FIX::MDEntryType_BID));
+  message.addGroup(groupBid);
+
+  // Offer art of tag 269
+  FIX44::MarketDataRequest::NoMDEntryTypes groupOffer;
+  groupOffer.set(FIX::MDEntryType(FIX::MDEntryType_OFFER));
+  message.addGroup(groupOffer);
+
+  // Symbol, 55=symbol
+  FIX44::MarketDataRequest::NoRelatedSym groupSymbol;
+  groupSymbol.set(FIX::Symbol(symbol));
+  message.addGroup(groupSymbol);
+
+  // Send message to target
+  FIX::Session::sendToTarget(message, sessionID);
+}
+

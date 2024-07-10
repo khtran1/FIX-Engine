@@ -21,18 +21,23 @@ int main(int argc, char** argv) {
   try {
     FIX::SessionSettings settings("config/fix.cfg");
 
-    FIXApp application;
+    FIXApp app;
     FIX::FileStoreFactory storeFactory(settings);
     FIX::FileLogFactory logFactory(settings);
-    FIX::SocketInitiator Initiator(application, storeFactory, settings, logFactory);
+    FIX::SocketInitiator Initiator(app, storeFactory, settings, logFactory);
     
-    loadCreds(application.creds, "config/creds.cfg");
+    loadCreds(app.creds, "config/creds.cfg");
 
     Initiator.start();
 
     std::cout << "Awaiting logon..." << std::endl;
-    application.latch.await();
+    app.latch.await();
     std::cout << "Done." << std::endl;
+
+    FIX::SessionID sessionID("FIX.4.4", "DEMOTRADER02", app.creds["target"]);
+    
+    // do stuff while logged in
+    app.sendMarketDataRequest44("USD/JPY", false, sessionID);
 
     // Awaits user input before logging out
     std::cin.get();
