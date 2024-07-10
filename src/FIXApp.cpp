@@ -3,10 +3,12 @@
 
 void FIXApp::onCreate(const FIX::SessionID& sessionID) {
   std::cout << "Session created: " << sessionID << std::endl;
+  this->latch.countUp();
 }
 
 void FIXApp::onLogon(const FIX::SessionID& sessionID) {
   std::cout << "Logon - Session: " << sessionID << std::endl;
+  this->latch.countDown();
 }
 
 void FIXApp::onLogout(const FIX::SessionID& sessionID) {
@@ -15,7 +17,23 @@ void FIXApp::onLogout(const FIX::SessionID& sessionID) {
 
 void FIXApp::toAdmin(FIX::Message& message, const FIX::SessionID& sessionID) {
   std::cout << "To Admin - Session: " << sessionID << std::endl;
-  std::cout << "    " << message << std::endl;
+
+  FIX::MsgType msgtype;
+  message.getHeader().getField(msgtype);
+
+  if (msgtype == FIX::MsgType_Logon) {
+    std::cout << "Attempting Logon: " << message << std::endl;
+
+    // This assumes that senderCompID IS ALWAYS the username...
+    std::string sender = sessionID.getSenderCompID();
+    std::string password = this->creds[sender];
+    std::string target = sessionID.getTargetCompID();
+
+    message.setField(FIX::Username(sender));
+    message.setField(FIX::Password(password));
+  } else {
+    std::cout << "    " << message << std::endl;
+  }
 }
 
 void FIXApp::toApp(FIX::Message& message, const FIX::SessionID& sessionID) throw (FIX::DoNotSend) {

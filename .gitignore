@@ -37,3 +37,4 @@ logs/
 
 # Sensitive Data
 config/fix.cfg
+config/creds.cfg

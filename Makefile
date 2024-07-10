@@ -18,7 +18,7 @@ SRCS = $(PROJECT_HOME)/src/FIXInitiator.cpp $(PROJECT_HOME)/src/FIXApp.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 # Define the executable name
-TARGET = bin/fix-engine
+TARGET = build/fix-engine
 
 # Default target
 all: $(TARGET)
