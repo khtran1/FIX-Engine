@@ -57,10 +57,15 @@ void FIXApp::fromAdmin(const FIX::Message &message, const FIX::SessionID &sessio
 
 void FIXApp::fromApp(const FIX::Message &message, const FIX::SessionID &sessionID) throw(FIX::FieldNotFound, FIX::IncorrectDataFormat, FIX::IncorrectTagValue, FIX::UnsupportedMessageType)
 {
-  std::cout << "From App - Session: " << sessionID << std::endl;
-  std::cout << "    " << message << std::endl;
-
-  crack(message, sessionID);
+  try
+  {
+    crack(message, sessionID);
+  }
+  catch (const std::exception &e)
+  {
+    std::cout << "Unsupported From App - Session: " << sessionID << std::endl;
+    std::cout << "    " << message << std::endl;
+  }
 }
 
 void FIXApp::sendMarketDataRequest44(std::string symbol, bool isTypeX, const FIX::SessionID &sessionID)
@@ -91,4 +96,53 @@ void FIXApp::sendMarketDataRequest44(std::string symbol, bool isTypeX, const FIX
 
   // Send message to target
   FIX::Session::sendToTarget(message, sessionID);
+}
+
+void FIXApp::onMessage(const FIX44::MarketDataSnapshotFullRefresh &message, const FIX::SessionID &sessionID)
+{
+  FIX::MDReqID reqID;
+  message.get(reqID);
+
+  FIX::Symbol symbol;
+  message.get(symbol);
+
+  FIX::SendingTime time;
+  message.getHeader().get(time);
+
+  std::cout << symbol << " - " << time << std::endl;
+
+  FIX::NoMDEntries noMDEntries;
+  message.get(noMDEntries);
+
+  for (int i = 1; i <= noMDEntries; i++)
+  {
+    FIX44::MarketDataSnapshotFullRefresh::NoMDEntries group;
+    message.getGroup(i, group);
+
+    FIX::MDEntryType mdEntryType;
+    group.get(mdEntryType);
+
+    FIX::MDEntryPx mdEntryPx;
+    group.get(mdEntryPx);
+
+    FIX::MDEntrySize mdEntrySize;
+    group.get(mdEntrySize);
+
+    char entryType = mdEntryType.getValue();
+    double price = mdEntryPx.getValue();
+    int size = mdEntrySize.getValue();
+
+    if (entryType == '0')
+    { // BID
+      std::cout << "    BID: " << price << " x " << size << std::endl;
+    }
+    else if (entryType == '1')
+    { // OFFER
+      std::cout << "    OFFER: " << price << " x " << size << std::endl;
+    }
+  }
+
+  std::cout << "    ReqID: " << reqID << std::endl;
+  
+  std::cout << std::endl;
 }
