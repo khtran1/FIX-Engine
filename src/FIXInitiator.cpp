@@ -42,7 +42,7 @@ int main(int argc, char **argv)
     FIX::SessionID sessionID("FIX.4.4", "DEMOTRADER02", app.creds["target"]);
 
     // do stuff while logged in
-    app.sendMarketDataRequest44("USD/JPY", false, sessionID);
+    app.sendMarketDataRequest44("USD/JPY", true, sessionID);
 
     // Awaits user input before logging out
     std::cin.get();

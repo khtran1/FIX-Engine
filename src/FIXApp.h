@@ -8,6 +8,7 @@
 
 #include "quickfix/fix44/MarketDataRequest.h"
 #include "quickfix/fix44/MarketDataSnapshotFullRefresh.h"
+#include "quickfix/fix44/MarketDataIncrementalRefresh.h"
 
 #include "CountdownLatch.h"
 
@@ -28,6 +29,7 @@ public:
   // 35=V, 35=W, 35=X
   void sendMarketDataRequest44(std::string symbol, bool isTypeX, const FIX::SessionID &sessionID);
   void onMessage(const FIX44::MarketDataSnapshotFullRefresh &message, const FIX::SessionID &sessionID);
+  void onMessage(const FIX44::MarketDataIncrementalRefresh &message, const FIX::SessionID &sessionID);
 };
 
 #endif
