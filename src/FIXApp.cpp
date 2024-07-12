@@ -57,15 +57,10 @@ void FIXApp::fromAdmin(const FIX::Message &message, const FIX::SessionID &sessio
 
 void FIXApp::fromApp(const FIX::Message &message, const FIX::SessionID &sessionID) throw(FIX::FieldNotFound, FIX::IncorrectDataFormat, FIX::IncorrectTagValue, FIX::UnsupportedMessageType)
 {
-  try
-  {
-    crack(message, sessionID);
-  }
-  catch (const std::exception &e)
-  {
-    std::cout << "Unsupported From App - Session: " << sessionID << std::endl;
-    std::cout << "    " << message << std::endl;
-  }
+  std::cout << "From App - Session: " << sessionID << std::endl;
+  std::cout << "    " << message << std::endl;
+
+  crack(message, sessionID);
 }
 
 void FIXApp::sendMarketDataRequest44(std::string symbol, bool isTypeX, const FIX::SessionID &sessionID)
@@ -143,6 +138,6 @@ void FIXApp::onMessage(const FIX44::MarketDataSnapshotFullRefresh &message, cons
   }
 
   std::cout << "    ReqID: " << reqID << std::endl;
-  
+
   std::cout << std::endl;
 }
