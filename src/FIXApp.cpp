@@ -1,3 +1,5 @@
+// FIXApp.cpp
+
 #include "FIXApp.h"
 #include <iostream>
 
@@ -198,4 +200,19 @@ void FIXApp::onMessage(const FIX44::MarketDataIncrementalRefresh &message, const
   std::cout << "    35=X" << std::endl;
 
   std::cout << std::endl;
+}
+
+void FIXApp::sendNewOrderSingle44(std::string symbol, char orderType, char side, int qty, char timeInForce, const FIX::SessionID &sessionID)
+{
+  FIX44::NewOrderSingle message(
+      FIX::ClOrdID("1234"),
+      FIX::Side(side),
+      FIX::TransactTime(),
+      FIX::OrdType(orderType));
+}
+
+void FIXApp::onMessage(const FIX44::NewOrderSingle &message, const FIX::SessionID &sessionID)
+{
+  std::cout << "NewOrderSingle" << std::endl;
+  std::cout << message << std::endl;
 }
