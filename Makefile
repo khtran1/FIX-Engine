@@ -12,7 +12,7 @@ CXXFLAGS = -std=c++11 -Wall -I$(QUICKFIX_HOME)/include -finline-functions -fexce
 LDFLAGS = -L$(QUICKFIX_HOME)/lib -lquickfix -lpthread -lxml2 -lz
 
 # Define the source files
-SRCS = $(PROJECT_HOME)/src/FIXInitiator.cpp $(PROJECT_HOME)/src/FIXApp.cpp
+SRCS = $(PROJECT_HOME)/src/FIXInitiator.cpp $(PROJECT_HOME)/src/FIXApp.cpp $(PROJECT_HOME)/src/utils.cpp 
 
 # Define the object files
 OBJS = $(SRCS:.cpp=.o)
