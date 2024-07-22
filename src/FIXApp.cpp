@@ -1,7 +1,6 @@
 // FIXApp.cpp
 
 #include "FIXApp.h"
-#include <iostream>
 
 void FIXApp::onCreate(const FIX::SessionID &sessionID)
 {
@@ -167,6 +166,7 @@ void FIXApp::onMessage(const FIX44::MarketDataIncrementalRefresh &message, const
   FIX::NoMDEntries noMDEntries;
   message.get(noMDEntries);
 
+  // Read each market data group (usually bid and offer groups) and parse
   for (int i = 1; i <= noMDEntries; i++)
   {
     FIX44::MarketDataIncrementalRefresh::NoMDEntries group;
@@ -202,17 +202,143 @@ void FIXApp::onMessage(const FIX44::MarketDataIncrementalRefresh &message, const
   std::cout << std::endl;
 }
 
-void FIXApp::sendNewOrderSingle44(std::string symbol, char orderType, char side, int qty, char timeInForce, const FIX::SessionID &sessionID)
+void FIXApp::sendNewOrderSingle44(std::string symbol, OrderType type, Side side, int qty, TimeInForce timeInForce, const FIX::SessionID &sessionID, double price)
 {
+  // Ensure price is valid if needed (limit orders)
+  if (type != Market)
+  {
+    if (price == -1.0)
+    {
+      std::cerr << "NewOrderSingle: Tried sending non-market order without stop/limit price" << std::endl;
+      return;
+    }
+  }
+
+  // Create a NewOrderSingle and set necessary fields
   FIX44::NewOrderSingle message(
-      FIX::ClOrdID("1234"),
-      FIX::Side(side),
+      FIX::ClOrdID(getRandomID()),
+      side,
       FIX::TransactTime(),
-      FIX::OrdType(orderType));
+      FIX::OrdType(type));
+
+  message.set(FIX::Symbol(symbol));
+  message.set(FIX::OrderQty(qty));
+  message.set(FIX::TimeInForce(timeInForce));
+
+  // Non-Market orders require their respective price fields to be set
+  switch (type)
+  {
+  case Limit:
+    message.set(FIX::Price(price));
+    break;
+  case Stop:
+    message.set(FIX::StopPx(price));
+    break;
+  case StopLimit:
+    message.set(FIX::StopPx(price));
+    break;
+  default:
+    break;
+  }
+
+  FIX::Session::sendToTarget(message, sessionID);
 }
 
-void FIXApp::onMessage(const FIX44::NewOrderSingle &message, const FIX::SessionID &sessionID)
+void FIXApp::onMessage(const FIX44::ExecutionReport &message, const FIX::SessionID &sessionID)
 {
-  std::cout << "NewOrderSingle" << std::endl;
-  std::cout << message << std::endl;
+  FIX::ClOrdID clOrdID;
+  FIX::Side side;
+  FIX::TransactTime transactTime;
+  FIX::OrdType ordType;
+  FIX::Symbol symbol;
+  FIX::OrderQty orderQty;
+  FIX::OrdStatus ordStatus;
+
+  message.get(clOrdID);
+  message.get(side);
+  message.get(transactTime);
+  message.get(ordType);
+  message.get(symbol);
+  message.get(orderQty);
+  message.get(ordStatus);
+
+  std::cout << "Execution Report" << std::endl;
+  std::cout << "  Client Order ID: " << clOrdID << std::endl;
+  std::cout << "  Transaction Time: " << transactTime << std::endl;
+
+  switch (ordType)
+  {
+  case Market:
+  {
+    if (ordStatus == FIX::OrdStatus_FILLED)
+    {
+      if (side == Buy)
+      {
+        std::cout << "  Bought " << orderQty << " ";
+      }
+      else if (side == Sell)
+      {
+        std::cout << "  Sold " << orderQty << " ";
+      }
+
+      FIX::AvgPx avgPrice;
+      message.get(avgPrice);
+
+      std::cout << symbol << " at " << avgPrice << " for " << avgPrice * orderQty << std::endl;
+    }
+    else
+    {
+      handleExecReportError(message, sessionID);
+    }
+    break;
+  }
+  case Limit:
+  {
+    if (ordStatus == FIX::OrdStatus_FILLED)
+    {
+      if (side == Buy)
+      {
+        std::cout << "  Filled limit buy of " << orderQty << " ";
+      }
+      else if (side == Sell)
+      {
+        std::cout << "  Filled limit sell of " << orderQty << " ";
+      }
+
+      FIX::AvgPx avgPrice;
+      message.get(avgPrice);
+
+      std::cout << symbol << " at " << avgPrice << " for " << avgPrice * orderQty << std::endl;
+      break;
+    }
+    else
+    {
+      handleExecReportError(message, sessionID);
+    }
+  }
+  }
+}
+
+void FIXApp::handleExecReportError(const FIX44::ExecutionReport &message, const FIX::SessionID &sessionID)
+{
+  FIX::OrdStatus ordStatus;
+  FIX::Text reason;
+
+  message.get(ordStatus);
+  message.get(reason);
+
+  switch (ordStatus)
+  {
+  case FIX::OrdStatus_CANCELED:
+  {
+    std::cout << "  Order was cancelled: " << reason << std::endl;
+    break;
+  }
+  default:
+  {
+    std::cout << "  Unimplemented ExecutionReport: " << reason << std::endl;
+    std::cout << message << std::endl;
+    break;
+  }
+  }
 }

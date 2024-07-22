@@ -1,7 +1,9 @@
 #ifndef FIXAPP_H
 #define FIXAPP_H
 
+#include <iostream>
 #include <unordered_map>
+#include <optional>
 
 #include "quickfix/Application.h"
 #include "quickfix/MessageCracker.h"
@@ -10,8 +12,36 @@
 #include "quickfix/fix44/MarketDataSnapshotFullRefresh.h"
 #include "quickfix/fix44/MarketDataIncrementalRefresh.h"
 #include "quickfix/fix44/NewOrderSingle.h"
+#include "quickfix/fix44/ExecutionReport.h"
 
 #include "utils.h"
+
+enum OrderType
+{
+  Market = FIX::OrdType_MARKET,
+  Limit,
+  Stop,
+  StopLimit
+};
+
+enum Side
+{
+  Buy = FIX::Side_BUY,
+  Sell
+};
+
+// https://www.onixs.biz/fix-dictionary/4.4/tagNum_59.html
+enum TimeInForce
+{
+  DAY,
+  GTC,
+  OPG,
+  IOC = FIX::TimeInForce_IMMEDIATE_OR_CANCEL,
+  FOK,
+  GTX,
+  GTD,
+  CLOSE
+};
 
 class FIXApp : public FIX::Application, public FIX::MessageCracker
 {
@@ -44,9 +74,12 @@ public:
    * @param side Tag 54. 1=Buy, 2=Sell
    * @param qty Tag 38
    * @param timeInForce Tag 59. 0=DAY, 1=GTC, 2=OPG, 3=IOC, 4=FOK, 5=GTX, 6=GTD, 7=CLOSE
+   * @param price Optional value to be used with non-market orders
    */
-  void sendNewOrderSingle44(std::string symbol, char orderType, char side, int qty, char timeInForce, const FIX::SessionID &sessionID);
-  void onMessage(const FIX44::NewOrderSingle &message, const FIX::SessionID &sessionID);
+
+  void sendNewOrderSingle44(std::string symbol, OrderType type, Side side, int qty, TimeInForce timeInForce, const FIX::SessionID &sessionID, double price = -1.0);
+  void onMessage(const FIX44::ExecutionReport &message, const FIX::SessionID &sessionID);
+  void handleExecReportError(const FIX44::ExecutionReport &message, const FIX::SessionID &sessionID);
 };
 
 #endif

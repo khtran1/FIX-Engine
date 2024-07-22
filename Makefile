@@ -6,7 +6,7 @@ QUICKFIX_HOME = ~/quickfix
 PROJECT_HOME = ~/personal/FIX-Engine
 
 # Define the compiler flags
-CXXFLAGS = -std=c++11 -Wall -I$(QUICKFIX_HOME)/include -finline-functions -fexceptions
+CXXFLAGS = -std=c++11 -Wall -I$(QUICKFIX_HOME)/include -finline-functions -fexceptions -Wdeprecated
 
 # Define the linker flags
 LDFLAGS = -L$(QUICKFIX_HOME)/lib -lquickfix -lpthread -lxml2 -lz
