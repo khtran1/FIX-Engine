@@ -60,12 +60,43 @@ public:
   /**
    * @brief Send a MarketDataRequest message.
    * @param symbol Tag 55
-   * @param isTypeX If isTypeX is false, then target returns MDSnapshotFullRefresh (35=W). Else, MDIncrementalRefresh is returned (35=X).
+   * @param isIncremental If isIncremental is false, then target returns MDSnapshotFullRefresh (35=W). Else, MDIncrementalRefresh is returned (35=X).
    * @param sessionID
    */
-  void sendMarketDataRequest44(std::string symbol, bool isTypeX, const FIX::SessionID &sessionID);
+  void sendMarketDataRequest44(std::string symbol, bool isIncremental, const FIX::SessionID &sessionID);
   void onMessage(const FIX44::MarketDataSnapshotFullRefresh &message, const FIX::SessionID &sessionID);
   void onMessage(const FIX44::MarketDataIncrementalRefresh &message, const FIX::SessionID &sessionID);
+
+  /**
+   * @brief Gets the fields and processes them. For now, it outputs to console.
+   * @tparam Group Accepts only FIX44::(MarketDataSnapshotFullRefresh or MarketDataIncrementalRefresh)::NoMDEntries
+   * @param group Should hold Bid/Offer entries
+   */
+  template <typename Group>
+  void outputMarketData(const Group &group)
+  {
+    FIX::MDEntryType mdEntryType;
+    group.get(mdEntryType);
+
+    FIX::MDEntryPx mdEntryPx;
+    group.get(mdEntryPx);
+
+    FIX::MDEntrySize mdEntrySize;
+    group.get(mdEntrySize);
+
+    char entryType = mdEntryType.getValue();
+    double price = mdEntryPx.getValue();
+    int size = mdEntrySize.getValue();
+
+    if (entryType == '0')
+    { // BID
+      std::cout << "    BID: " << price << " x " << size << std::endl;
+    }
+    else if (entryType == '1')
+    { // OFFER
+      std::cout << "    OFFER: " << price << " x " << size << std::endl;
+    }
+  }
 
   /**
    * @brief Send a NewOrderSingle message (35=D).

@@ -69,7 +69,7 @@ void FIXApp::fromApp(const FIX::Message &message, const FIX::SessionID &sessionI
   }
 }
 
-void FIXApp::sendMarketDataRequest44(std::string symbol, bool isTypeX, const FIX::SessionID &sessionID)
+void FIXApp::sendMarketDataRequest44(std::string symbol, bool isIncremental, const FIX::SessionID &sessionID)
 {
   FIX44::MarketDataRequest message(
       // fields 262, 263, 264 respectively
@@ -78,14 +78,14 @@ void FIXApp::sendMarketDataRequest44(std::string symbol, bool isTypeX, const FIX
       FIX::MarketDepth(1));
 
   // if isTypeX = false, then request 35=W. Else, request 35=X
-  message.set(FIX::MDUpdateType(isTypeX));
+  message.set(FIX::MDUpdateType(isIncremental));
 
   // Bid part of tag 269
   FIX44::MarketDataRequest::NoMDEntryTypes groupBid;
   groupBid.set(FIX::MDEntryType(FIX::MDEntryType_BID));
   message.addGroup(groupBid);
 
-  // Offer art of tag 269
+  // Offer part of tag 269
   FIX44::MarketDataRequest::NoMDEntryTypes groupOffer;
   groupOffer.set(FIX::MDEntryType(FIX::MDEntryType_OFFER));
   message.addGroup(groupOffer);
@@ -102,12 +102,12 @@ void FIXApp::sendMarketDataRequest44(std::string symbol, bool isTypeX, const FIX
 void FIXApp::onMessage(const FIX44::MarketDataSnapshotFullRefresh &message, const FIX::SessionID &sessionID)
 {
   FIX::MDReqID reqID;
-  message.get(reqID);
-
   FIX::Symbol symbol;
-  message.get(symbol);
-
   FIX::SendingTime time;
+  FIX44::MarketDataSnapshotFullRefresh::NoMDEntries group;
+
+  message.get(reqID);
+  message.get(symbol);
   message.getHeader().get(time);
 
   std::cout << symbol << " - " << time << std::endl;
@@ -117,48 +117,24 @@ void FIXApp::onMessage(const FIX44::MarketDataSnapshotFullRefresh &message, cons
 
   for (int i = 1; i <= noMDEntries; i++)
   {
-    FIX44::MarketDataSnapshotFullRefresh::NoMDEntries group;
     message.getGroup(i, group);
-
-    FIX::MDEntryType mdEntryType;
-    group.get(mdEntryType);
-
-    FIX::MDEntryPx mdEntryPx;
-    group.get(mdEntryPx);
-
-    FIX::MDEntrySize mdEntrySize;
-    group.get(mdEntrySize);
-
-    char entryType = mdEntryType.getValue();
-    double price = mdEntryPx.getValue();
-    int size = mdEntrySize.getValue();
-
-    if (entryType == '0')
-    { // BID
-      std::cout << "    BID: " << price << " x " << size << std::endl;
-    }
-    else if (entryType == '1')
-    { // OFFER
-      std::cout << "    OFFER: " << price << " x " << size << std::endl;
-    }
+    outputMarketData(group);
   }
 
   std::cout << "    ReqID: " << reqID << std::endl;
-
-  std::cout << "    35=W" << std::endl;
-
-  std::cout << std::endl;
+  std::cout << "    35=W" << std::endl
+            << std::endl;
 }
 
 void FIXApp::onMessage(const FIX44::MarketDataIncrementalRefresh &message, const FIX::SessionID &sessionID)
 {
   FIX::MDReqID reqID;
-  message.get(reqID);
-
   FIX::Symbol symbol;
-  message.getField(symbol);
-
   FIX::SendingTime time;
+  FIX44::MarketDataIncrementalRefresh::NoMDEntries group;
+
+  message.get(reqID);
+  message.getField(symbol);
   message.getHeader().get(time);
 
   std::cout << symbol << " - " << time << std::endl;
@@ -169,37 +145,13 @@ void FIXApp::onMessage(const FIX44::MarketDataIncrementalRefresh &message, const
   // Read each market data group (usually bid and offer groups) and parse
   for (int i = 1; i <= noMDEntries; i++)
   {
-    FIX44::MarketDataIncrementalRefresh::NoMDEntries group;
     message.getGroup(i, group);
-
-    FIX::MDEntryType mdEntryType;
-    group.get(mdEntryType);
-
-    FIX::MDEntryPx mdEntryPx;
-    group.get(mdEntryPx);
-
-    FIX::MDEntrySize mdEntrySize;
-    group.get(mdEntrySize);
-
-    char entryType = mdEntryType.getValue();
-    double price = mdEntryPx.getValue();
-    int size = mdEntrySize.getValue();
-
-    if (entryType == '0')
-    { // BID
-      std::cout << "    BID: " << price << " x " << size << std::endl;
-    }
-    else if (entryType == '1')
-    { // OFFER
-      std::cout << "    OFFER: " << price << " x " << size << std::endl;
-    }
+    outputMarketData(group);
   }
 
   std::cout << "    ReqID: " << reqID << std::endl;
-
-  std::cout << "    35=X" << std::endl;
-
-  std::cout << std::endl;
+  std::cout << "    35=X" << std::endl
+            << std::endl;
 }
 
 void FIXApp::sendNewOrderSingle44(std::string symbol, OrderType type, Side side, int qty, TimeInForce timeInForce, const FIX::SessionID &sessionID, double price)
